@@ -4,17 +4,10 @@ import SuggestionsEntry from "./SuggestionsEntry";
 
 import suggestionContext from "./suggestionContext";
 
-const hashtag = ["starwars", "startrek", "big lebowski", "clockwork orange"];
 class SuggestionsPortal extends React.Component {
   static contextType = suggestionContext;
 
   render() {
-    console.log(this.context);
-    const matchingRegexp = new RegExp(
-      `.*${this.props.decoratedText.substr(1)}.*`
-    );
-    const matchingEntries = hashtag.filter(s => s.match(matchingRegexp));
-
     return ReactDOM.createPortal(
       <div
         style={{
@@ -26,11 +19,11 @@ class SuggestionsPortal extends React.Component {
         }}
       >
         <div>
-          {matchingEntries.map(entry => (
+          {this.context.suggestions.map(entry => (
             <SuggestionsEntry
               key={entry}
               entry={entry}
-              onClick={() => this.context.onChange(entry)}
+              onClick={() => this.context.validate(entry)}
               selected={this.context.selected === entry}
             />
           ))}
@@ -42,28 +35,32 @@ class SuggestionsPortal extends React.Component {
 }
 
 export default class SuggestionsBox extends React.Component {
+  static contextType = suggestionContext;
   constructor() {
     super();
     this.ref = React.createRef();
-    this.state = { init: false };
+    this.state = { init: false, position: { bottom: 0, left: 0 } };
   }
 
   componentDidMount() {
-    this.setState({ init: true });
+    this.setState({
+      init: true,
+      position: this.ref.current.getBoundingClientRect()
+    });
+    this.context.isCurrentlyAutocompleting(true);
+  }
+
+  componentWillUnmount() {
+    this.context.isCurrentlyAutocompleting(false);
   }
 
   render() {
     return (
       <>
-        <span ref={this.ref}>{this.props.children}</span>
-        <SuggestionsPortal
-          {...this.props}
-          position={
-            this.state.init
-              ? this.ref.current.getBoundingClientRect()
-              : { bottom: 0, left: 0 }
-          }
-        />
+        <span style={{ backgroundColor: "yellow" }} ref={this.ref}>
+          {this.props.children}
+        </span>
+        <SuggestionsPortal {...this.props} position={this.state.position} />
       </>
     );
   }

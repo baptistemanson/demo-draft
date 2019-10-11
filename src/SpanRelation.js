@@ -4,7 +4,7 @@ export default props => {
   return (
     <span
       style={{
-        color: "rgba(98, 177, 254, 1.0)",
+        color: "rgba(177, 100, 24, 1.0)",
         direction: "ltr",
         unicodeBidi: "bidi-override"
       }}

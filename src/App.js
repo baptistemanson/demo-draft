@@ -7,14 +7,15 @@ import SpanRelation from "./SpanRelation";
 
 import SuggestionsBox from "./SuggestionsBox";
 import defaultContent from "./defaultContent";
-import suggestionContext from "./suggestionContext";
-
+import suggestionContext, { getMatchingEntries } from "./suggestionContext";
+import { replaceMatchedTextByEntity } from "./replaceWithEntity";
 import {
   EditorState,
   Editor,
   CompositeDecorator,
   convertFromRaw,
-  convertToRaw
+  convertToRaw,
+  getDefaultKeyBinding
 } from "draft-js";
 
 class IdeaflowEditor extends React.Component {
@@ -34,7 +35,7 @@ class IdeaflowEditor extends React.Component {
         component: SpanRelation
       },
       {
-        strategy: findByPattern,
+        strategy: this.findSuggestions.bind(this),
         component: SuggestionsBox
       }
     ]);
@@ -42,7 +43,9 @@ class IdeaflowEditor extends React.Component {
     this.state = {
       editorState: EditorState.createWithContent(blocks, decorator),
       autocompleteEntityType: null,
-      selected: ""
+      selected: "",
+      textToMatch: "",
+      textToMatchPosition: { start: 0, end: 0, contentBlock: null }
     };
     this.focus = () => this.refs.editor.focus();
     this.onChange = editorState => this.setState({ editorState });
@@ -52,17 +55,87 @@ class IdeaflowEditor extends React.Component {
     console.log(convertToRaw(this.state.editorState.getCurrentContent()));
   }
 
-  isEditingCurrentEntity() {
-    const selectionState = this.state.editorState.getSelection();
-    const anchorKey = selectionState.getAnchorKey();
-    const currentContent = this.state.editorState.getCurrentContent();
-    const currentContentBlock = currentContent.getBlockForKey(anchorKey);
-    const start = selectionState.getStartOffset();
-    // const end = selectionState.getEndOffset();
-    const key = currentContentBlock.getEntityAt(start);
-    if (key) {
-      const entity = currentContent.getEntity(key);
-      console.log("Found one!", entity.getData());
+  findSuggestions(contentBlock, callback, contentState) {
+    const text = contentBlock.getText();
+    const regexp = /@[\w]+/g;
+    let matchArr, start;
+    while ((matchArr = regexp.exec(text)) !== null) {
+      start = matchArr.index;
+      // if there is already an entity at this position, we dont put the suggestion box
+      const key = contentBlock.getEntityAt(start);
+      if (!key) {
+        this.setState({
+          textToMatch: matchArr[0],
+          textToMatchPosition: {
+            start,
+            end: start + matchArr[0].length,
+            contentBlock
+          }
+        });
+        callback(start, start + matchArr[0].length);
+        break;
+      }
+    }
+  }
+
+  // isEditingCurrentEntity() {
+  //   const selectionState = this.state.editorState.getSelection();
+  //   const anchorKey = selectionState.getAnchorKey();
+  //   const currentContent = this.state.editorState.getCurrentContent();
+  //   const currentContentBlock = currentContent.getBlockForKey(anchorKey);
+  //   const start = selectionState.getStartOffset();
+  //   // const end = selectionState.getEndOffset();
+  //   const key = currentContentBlock.getEntityAt(start);
+  //   if (key) {
+  //     const entity = currentContent.getEntity(key);
+  //     console.log("Found one!", entity.getData());
+  //   }
+  // }
+
+  keyBindingFn(e) {
+    if (e.keyCode === 38 && this.state.isCurrentlyAutocompleting) {
+      return "move-up";
+    }
+    if (e.keyCode === 40 && this.state.isCurrentlyAutocompleting) {
+      return "move-down";
+    }
+    if (e.keyCode === 13 && this.state.isCurrentlyAutocompleting) {
+      return "validate";
+    }
+    return getDefaultKeyBinding(e);
+  }
+
+  handleKeyCommand(command) {
+    switch (command) {
+      case "move-up": {
+        const suggestions = getMatchingEntries(this.state.textToMatch);
+        const index = suggestions.indexOf(this.state.selected);
+        if (index > 0) this.setState({ selected: suggestions[index - 1] });
+        console.log("move-up");
+        return "handled";
+      }
+      case "move-down": {
+        const suggestions = getMatchingEntries(this.state.textToMatch);
+        const index = suggestions.indexOf(this.state.selected);
+        if (index === -1) this.setState({ selected: suggestions[0] });
+        if (index < suggestions.length - 1) {
+          this.setState({ selected: suggestions[index + 1] });
+          console.log("move-down");
+        }
+        return "handled";
+      }
+      case "validate":
+        const editorState = replaceMatchedTextByEntity(
+          this.state.editorState,
+          this.state.textToMatchPosition.start,
+          this.state.textToMatchPosition.end,
+          this.state.selected ? this.state.selected : this.state.textToMatch
+        );
+        this.setState({ editorState });
+        // console.log(newEditorState);
+        return "handled";
+      default:
+        return "not-handled";
     }
   }
 
@@ -72,7 +145,18 @@ class IdeaflowEditor extends React.Component {
         <suggestionContext.Provider
           value={{
             selected: this.state.selected,
-            onChange: selected => this.setState({ selected })
+            suggestions: getMatchingEntries(this.state.textToMatch),
+            validate: selected => this.setState({ selected }),
+            setTextToMatch: textToMatch => this.setState({ textToMatch }),
+            isCurrentlyAutocompleting: isCurrentlyAutocompleting => {
+              // if prob not required, but hey.
+              if (
+                this.state.isCurrentlyAutocompleting !==
+                isCurrentlyAutocompleting
+              ) {
+                this.setState({ isCurrentlyAutocompleting, selected: "" });
+              }
+            }
           }}
         >
           <div
@@ -80,7 +164,7 @@ class IdeaflowEditor extends React.Component {
               ...styles.editor,
               backgroundColor: this.state.isCurrentlyAutocompleting
                 ? "red"
-                : "none"
+                : "white"
             }}
             onClick={this.focus}
           >
@@ -89,6 +173,8 @@ class IdeaflowEditor extends React.Component {
               onChange={this.onChange}
               placeholder="Write a tweet..."
               ref="editor"
+              handleKeyCommand={this.handleKeyCommand.bind(this)}
+              keyBindingFn={this.keyBindingFn.bind(this)}
             />
             <div id="suggestions" />
           </div>
@@ -99,6 +185,8 @@ class IdeaflowEditor extends React.Component {
             value="Log State"
           />
         </suggestionContext.Provider>
+        {this.state.textToMatchPosition.start}
+        {this.state.textToMatchPosition.end}
       </div>
     );
   }
@@ -115,16 +203,6 @@ const findByEntityType = type => {
     }, callback);
   };
 };
-
-function findByPattern(contentBlock, callback, contentState) {
-  const text = contentBlock.getText();
-  const regexp = /@[\w]+/g;
-  let matchArr, start;
-  while ((matchArr = regexp.exec(text)) !== null) {
-    start = matchArr.index;
-    callback(start, start + matchArr[0].length);
-  }
-}
 
 const styles = {
   root: {
