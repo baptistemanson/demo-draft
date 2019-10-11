@@ -21,6 +21,7 @@ import {
 class IdeaflowEditor extends React.Component {
   constructor() {
     super();
+    const blocks = convertFromRaw(defaultContent);
     const decorator = new CompositeDecorator([
       {
         strategy: findByEntityType("person"),
@@ -39,14 +40,15 @@ class IdeaflowEditor extends React.Component {
         component: SuggestionsBox
       }
     ]);
-    const blocks = convertFromRaw(defaultContent);
+
     this.state = {
-      editorState: EditorState.createWithContent(blocks, decorator),
       autocompleteEntityType: null,
       selected: "",
       textToMatch: "",
+      editorState: EditorState.createWithContent(blocks, decorator),
       textToMatchPosition: { start: 0, end: 0, contentBlock: null }
     };
+
     this.focus = () => this.refs.editor.focus();
     this.onChange = editorState => this.setState({ editorState });
   }
@@ -56,23 +58,27 @@ class IdeaflowEditor extends React.Component {
   }
 
   findSuggestions(contentBlock, callback, contentState) {
+    // if we are init
+    if (!this.state) return;
     const text = contentBlock.getText();
-    const regexp = /@[\w]+/g;
+    const regexp = /([@#][^@#<]+|<>[^@#<]+)/g;
     let matchArr, start;
     while ((matchArr = regexp.exec(text)) !== null) {
+      console.log(matchArr);
       start = matchArr.index;
       // if there is already an entity at this position, we dont put the suggestion box
       const key = contentBlock.getEntityAt(start);
+      const end = this.state.editorState.getSelection().getEndOffset() + 1;
       if (!key) {
         this.setState({
           textToMatch: matchArr[0],
           textToMatchPosition: {
             start,
-            end: start + matchArr[0].length,
+            end,
             contentBlock
           }
         });
-        callback(start, start + matchArr[0].length);
+        callback(start, end);
         break;
       }
     }
@@ -102,6 +108,16 @@ class IdeaflowEditor extends React.Component {
     if (e.keyCode === 13 && this.state.isCurrentlyAutocompleting) {
       return "validate";
     }
+    if (e.keyCode === 9 && this.state.isCurrentlyAutocompleting) {
+      return "validate";
+    }
+    if (
+      e.keyCode === 32 &&
+      this.state.isCurrentlyAutocompleting &&
+      this.state.textToMatch.startsWith("#")
+    ) {
+      return "validate";
+    }
     return getDefaultKeyBinding(e);
   }
 
@@ -125,18 +141,23 @@ class IdeaflowEditor extends React.Component {
         return "handled";
       }
       case "validate":
-        const editorState = replaceMatchedTextByEntity(
-          this.state.editorState,
-          this.state.textToMatchPosition.start,
-          this.state.textToMatchPosition.end,
-          this.state.selected ? this.state.selected : this.state.textToMatch
-        );
-        this.setState({ editorState });
+        this.validate();
         // console.log(newEditorState);
         return "handled";
       default:
         return "not-handled";
     }
+  }
+  validate() {
+    const selected = this.state.selected || this.state.textToMatch;
+    const editorState = replaceMatchedTextByEntity(
+      this.state.editorState,
+      this.state.textToMatchPosition.start,
+      this.state.textToMatchPosition.end,
+      selected
+    );
+    console.log("here");
+    this.setState({ editorState, selected: "" });
   }
 
   render() {
@@ -146,7 +167,10 @@ class IdeaflowEditor extends React.Component {
           value={{
             selected: this.state.selected,
             suggestions: getMatchingEntries(this.state.textToMatch),
-            validate: selected => this.setState({ selected }),
+            onSelectSuggestion: textToMatch => {
+              this.setState({ textToMatch, isCurrentlyAutocompleting: false });
+              this.validate();
+            },
             setTextToMatch: textToMatch => this.setState({ textToMatch }),
             isCurrentlyAutocompleting: isCurrentlyAutocompleting => {
               // if prob not required, but hey.

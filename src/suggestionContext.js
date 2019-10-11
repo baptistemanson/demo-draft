@@ -6,15 +6,20 @@ export default React.createContext({
   setTextToMatch: () => {},
   moveUp: () => {},
   moveDown: () => {},
-  validate: () => {},
+  onSelectSuggestion: () => {},
   isCurrentlyAutocompleting: () => {}
 });
 
 const hashtag = [
-  "@starwars",
-  "@startrek",
-  "@big lebowski",
-  "@clockwork orange"
+  "@jacob",
+  "@bat",
+  "@ben",
+  "@chenglou",
+  "#starwars",
+  "#startrek",
+  "#adastra",
+  "<>hello",
+  "<>world"
 ];
 
 export const getMatchingEntries = selected => {

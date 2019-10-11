@@ -23,7 +23,7 @@ class SuggestionsPortal extends React.Component {
             <SuggestionsEntry
               key={entry}
               entry={entry}
-              onClick={() => this.context.validate(entry)}
+              onClick={() => this.context.onSelectSuggestion(entry)}
               selected={this.context.selected === entry}
             />
           ))}

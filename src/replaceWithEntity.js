@@ -1,5 +1,7 @@
 import { EditorState, Modifier } from "draft-js";
 
+const entityTypeMap = { "@": "person", "#": "hashtag", "<": "relation" };
+
 export const replaceMatchedTextByEntity = (editorState, start, end, text) => {
   // I assumed the current selection is the one we are trying to replace
   const selectionState = editorState.getSelection();
@@ -7,24 +9,23 @@ export const replaceMatchedTextByEntity = (editorState, start, end, text) => {
     anchorOffset: start,
     focusOffset: end
   });
-  const contentState = editorState.getCurrentContent();
-  const contentStateWithEntity = contentState.createEntity(
-    "person",
-    "IMMUTABLE"
-  );
-  const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+  let contentState = editorState.getCurrentContent();
+  contentState = contentState.createEntity(entityTypeMap[text[0]], "IMMUTABLE");
+  const entityKey = contentState.getLastCreatedEntityKey();
 
-  const contentStateWithReplacedText = Modifier.replaceText(
-    contentStateWithEntity,
+  contentState = Modifier.replaceText(
+    contentState,
     updatedSelection,
     text,
     null,
     entityKey
   );
-
-  return EditorState.push(
-    editorState,
-    contentStateWithReplacedText,
-    "replace-entity"
+  // I added an extra space, because I found it more confortable.
+  contentState = Modifier.insertText(
+    contentState,
+    contentState.getSelectionAfter(),
+    " "
   );
+
+  return EditorState.push(editorState, contentState, "replace-entity");
 };
