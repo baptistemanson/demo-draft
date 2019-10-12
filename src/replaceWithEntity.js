@@ -2,12 +2,20 @@ import { EditorState, Modifier } from "draft-js";
 
 const entityTypeMap = { "@": "person", "#": "hashtag", "<": "relation" };
 
-export const replaceMatchedTextByEntity = (editorState, start, end, text) => {
+export const replaceMatchedTextByEntity = (
+  editorState,
+  block,
+  start,
+  end,
+  text
+) => {
   // I assumed the current selection is the one we are trying to replace
   const selectionState = editorState.getSelection();
   const updatedSelection = selectionState.merge({
     anchorOffset: start,
-    focusOffset: end
+    focusOffset: end,
+    anchorKey: block.getKey(),
+    focusKey: block.getKey()
   });
   let contentState = editorState.getCurrentContent();
   contentState = contentState.createEntity(entityTypeMap[text[0]], "IMMUTABLE");

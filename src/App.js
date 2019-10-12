@@ -15,7 +15,6 @@ import {
   Editor,
   CompositeDecorator,
   convertFromRaw,
-  convertToRaw,
   getDefaultKeyBinding
 } from "draft-js";
 
@@ -43,7 +42,7 @@ class IdeaflowEditor extends React.Component {
     ]);
 
     this.state = {
-      autocompleteEntityType: null,
+      isCurrentlyAutocompleting: false,
       selected: "",
       textToMatch: "",
       editorState: EditorState.createWithContent(blocks, decorator),
@@ -53,10 +52,6 @@ class IdeaflowEditor extends React.Component {
 
     this.focus = () => this.refs.editor.focus();
     this.onChange = editorState => this.setState({ editorState });
-  }
-
-  logState() {
-    console.log(convertToRaw(this.state.editorState.getCurrentContent()));
   }
 
   findSuggestions(contentBlock, callback, contentState) {
@@ -126,7 +121,6 @@ class IdeaflowEditor extends React.Component {
         const suggestions = getMatchingEntries(this.state.textToMatch);
         const index = suggestions.indexOf(this.state.selected);
         if (index > 0) this.setState({ selected: suggestions[index - 1] });
-        console.log("move-up");
         return "handled";
       }
       case "move-down": {
@@ -135,13 +129,11 @@ class IdeaflowEditor extends React.Component {
         if (index === -1) this.setState({ selected: suggestions[0] });
         if (index < suggestions.length - 1) {
           this.setState({ selected: suggestions[index + 1] });
-          console.log("move-down");
         }
         return "handled";
       }
       case "validate":
         this.validate();
-        // console.log(newEditorState);
         return "handled";
       default:
         return "not-handled";
@@ -151,11 +143,24 @@ class IdeaflowEditor extends React.Component {
     const selected = this.state.selected || this.state.textToMatch;
     const editorState = replaceMatchedTextByEntity(
       this.state.editorState,
+      this.state.textToMatchPosition.contentBlock,
       this.state.textToMatchPosition.start,
       this.state.textToMatchPosition.end,
       selected
     );
-    this.setState({ editorState, selected: "", counterLetter: 0 });
+    this.setState({
+      isCurrentlyAutocompleting: false,
+      editorState,
+      selected: "",
+      counterLetter: 0
+    });
+  }
+
+  onClick() {
+    this.focus();
+    if (this.state.isCurrentlyAutocompleting) {
+      this.validate();
+    }
   }
 
   render() {
@@ -166,10 +171,7 @@ class IdeaflowEditor extends React.Component {
             selected: this.state.selected,
             suggestions: getMatchingEntries(this.state.textToMatch),
             onSelectSuggestion: selected => {
-              this.setState(
-                { selected, isCurrentlyAutocompleting: false },
-                this.validate.bind(this)
-              );
+              this.setState({ selected }, this.validate.bind(this));
             },
             setTextToMatch: textToMatch => this.setState({ textToMatch }),
             isCurrentlyAutocompleting: isCurrentlyAutocompleting => {
@@ -186,7 +188,7 @@ class IdeaflowEditor extends React.Component {
             }
           }}
         >
-          <div style={styles.editor} onClick={this.focus}>
+          <div style={styles.editor} onClick={this.onClick.bind(this)}>
             <Editor
               editorState={this.state.editorState}
               onChange={this.onChange}
@@ -197,15 +199,7 @@ class IdeaflowEditor extends React.Component {
             />
             <div id="suggestions" />
           </div>
-          <input
-            onClick={this.logState.bind(this)}
-            style={styles.button}
-            type="button"
-            value="Log State"
-          />
         </suggestionContext.Provider>
-        position start: [{this.state.textToMatchPosition.start}] position end: [
-        {this.state.textToMatchPosition.end}]
       </div>
     );
   }

@@ -12,7 +12,9 @@
 - [ ] introduce a better distance function for autocomplete entries - 30 min
 - [ ] correct bugs - 1h
 
-- [ ] Check bug if match autocomplete with arrows, then change entry...
+- [x] Check bug if match autocomplete with arrows, then change entry...
 - [x] Check bug with entries with spaces
 - [x] check bugs mouse selection
 - [x] Bug on the length of the selection
+
+- [ ] undo redo length of expression bug.

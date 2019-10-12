@@ -15,7 +15,8 @@ class SuggestionsPortal extends React.Component {
           zIndex: 1,
           position: "fixed",
           top: this.props.position.bottom + 15,
-          left: this.props.position.left
+          left: this.props.position.left,
+          cursor: "pointer"
         }}
       >
         <div>
