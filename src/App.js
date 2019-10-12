@@ -1,13 +1,13 @@
 import React from "react";
-// @todo reset current word when selecting around...
 
-import SpanHashtag from "./SpanHashtag";
-import SpanPerson from "./SpanPerson";
-import SpanRelation from "./SpanRelation";
+import SpanHashtag from "./Components/SpanHashtag";
+import SpanPerson from "./Components/SpanPerson";
+import SpanRelation from "./Components/SpanRelation";
 
-import SuggestionsBox from "./SuggestionsBox";
+import SuggestionsBox from "./Components/SuggestionsBox";
 import defaultContent from "./defaultContent";
-import suggestionContext, { getMatchingEntries } from "./suggestionContext";
+import suggestionContext from "./suggestionContext";
+import { getMatchingEntries } from "./textMatching";
 import { replaceMatchedTextByEntity } from "./replaceWithEntity";
 
 import {
@@ -45,37 +45,50 @@ class IdeaflowEditor extends React.Component {
       isCurrentlyAutocompleting: false,
       selected: "",
       textToMatch: "",
-      editorState: EditorState.createWithContent(blocks, decorator),
+      editorState: EditorState.set(
+        EditorState.createWithContent(blocks, decorator),
+        { allowUndo: false }
+      ),
       textToMatchPosition: { start: 0, end: 0, contentBlock: null },
       counterLetter: 0
     };
-
     this.focus = () => this.refs.editor.focus();
     this.onChange = editorState => this.setState({ editorState });
   }
-
+  /**
+   * Is in charge of detecting where the autocomplete process might occur.
+   *
+   * @param {*} contentBlock
+   * @param {*} callback
+   * @param {*} contentState
+   */
   findSuggestions(contentBlock, callback, contentState) {
-    // if we are init
+    // if we are initializing the system, we don't try to autocomplete.
     if (!this.state) return;
+    /**
+     * a string that starts by @, # then a char that is not followed by a whitespace and does not contain #.. OR
+     * a string that starts by <> and not followed by a whitespace.
+     */
+    const regexp = /([@#][^@#<\s][^@#<]*|<>[^@#<\s][^@#<]*)/g;
     const text = contentBlock.getText();
-    const regexp = /([@#][^@#<]+|<>[^@#<]+)/g;
-    let matchArr, start;
+    let matchArr;
     while ((matchArr = regexp.exec(text)) !== null) {
-      start = matchArr.index;
+      const start = matchArr.index;
       // if there is already an entity at this position, we dont put the suggestion box
-      const key = contentBlock.getEntityAt(start);
-      // @todo there is a bug here on delete.
       const prefixLength = matchArr[0][0] === "<" ? 3 : 2;
       const end = start + prefixLength + this.state.counterLetter;
+      // when there is already an entity at this location, we don't need automcomplete.
+      const key = contentBlock.getEntityAt(start);
       if (!key) {
         this.setState({
-          textToMatch: matchArr[0],
+          textToMatch: matchArr[0].substr(0, end - start),
           textToMatchPosition: {
             start,
             contentBlock,
             end
           }
         });
+        // only one autocomplete at a time, we would have to complexify to have more.
         callback(start, end);
         break;
       }
@@ -83,6 +96,8 @@ class IdeaflowEditor extends React.Component {
   }
 
   keyBindingFn(e) {
+    // we keep track of the number of characters in the autocomplete.
+    // we don't use the caret position because the selection object is buggy with backspace.
     if (this.state.isCurrentlyAutocompleting && isDisplayableChar(e.keyCode)) {
       this.setState({ counterLetter: this.state.counterLetter + 1 });
     }
@@ -90,9 +105,9 @@ class IdeaflowEditor extends React.Component {
       this.state.isCurrentlyAutocompleting &&
       (e.keyCode === 8 || e.keyCode === 46)
     ) {
-      // we typed a letter
       this.setState({ counterLetter: this.state.counterLetter - 1 });
     }
+
     if (e.keyCode === 38 && this.state.isCurrentlyAutocompleting) {
       return "move-up";
     }
@@ -105,6 +120,7 @@ class IdeaflowEditor extends React.Component {
     if (e.keyCode === 9 && this.state.isCurrentlyAutocompleting) {
       return "validate";
     }
+    // whitespace validates hashtag
     if (
       e.keyCode === 32 &&
       this.state.isCurrentlyAutocompleting &&
@@ -139,6 +155,7 @@ class IdeaflowEditor extends React.Component {
         return "not-handled";
     }
   }
+
   validate() {
     const selected = this.state.selected || this.state.textToMatch;
     const editorState = replaceMatchedTextByEntity(
@@ -204,6 +221,24 @@ class IdeaflowEditor extends React.Component {
     );
   }
 }
+/**
+ * Determines if we need to increment the counter after a keypress.
+ *
+ * /!\ it doesn't work if your keyboard is in International Mode on Mac with combined latin accent. It needs to be smarter.
+ *
+ * @param {*} keycode
+ */
+const isDisplayableChar = keycode => {
+  return (
+    (keycode > 47 && keycode < 58) || // number keys
+    keycode === 32 ||
+    keycode === 13 || // spacebar & return key(s) (if you want to allow carriage returns)
+    (keycode > 64 && keycode < 91) || // letter keys
+    (keycode > 95 && keycode < 112) || // numpad keys
+    (keycode > 185 && keycode < 193) || // ;=,-./` (in order)
+    (keycode > 218 && keycode < 223)
+  ); // [\]' (in order)
+};
 
 const findByEntityType = type => {
   return function(contentBlock, callback, contentState) {
@@ -235,18 +270,6 @@ const styles = {
   }
 };
 
-const isDisplayableChar = keycode => {
-  const valid =
-    (keycode > 47 && keycode < 58) || // number keys
-    keycode === 32 ||
-    keycode === 13 || // spacebar & return key(s) (if you want to allow carriage returns)
-    (keycode > 64 && keycode < 91) || // letter keys
-    (keycode > 95 && keycode < 112) || // numpad keys
-    (keycode > 185 && keycode < 193) || // ;=,-./` (in order)
-    (keycode > 218 && keycode < 223); // [\]' (in order)
-
-  return valid;
-};
 function App() {
   return (
     <div className="App">

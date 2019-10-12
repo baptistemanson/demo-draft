@@ -1,6 +1,6 @@
 import React from "react";
 
-import escapeString from "escape-string-regexp";
+// we put the context in a separate file, because interpendent files need simulatenous access.
 
 export default React.createContext({
   selected: "",
@@ -11,19 +11,3 @@ export default React.createContext({
   onSelectSuggestion: () => {},
   isCurrentlyAutocompleting: () => {}
 });
-
-const hashtag = [
-  "@jacob",
-  "@bat",
-  "@ben",
-  "@chenglou",
-  "#starwars",
-  "#startrek",
-  "#adastra",
-  "<>hello",
-  "<>world"
-];
-export const getMatchingEntries = selected => {
-  const matchingRegexp = new RegExp(`.*${escapeString(selected)}.*`);
-  return hashtag.filter(s => s.match(matchingRegexp));
-};

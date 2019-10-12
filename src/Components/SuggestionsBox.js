@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import SuggestionsEntry from "./SuggestionsEntry";
 
-import suggestionContext from "./suggestionContext";
+import suggestionContext from "../suggestionContext";
 
 class SuggestionsPortal extends React.Component {
   static contextType = suggestionContext;

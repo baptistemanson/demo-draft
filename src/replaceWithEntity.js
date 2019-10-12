@@ -9,7 +9,8 @@ export const replaceMatchedTextByEntity = (
   end,
   text
 ) => {
-  // I assumed the current selection is the one we are trying to replace
+  // I couldn't assume the current selection was the one we were trying to replace.
+  // selection is off by one in size when using the delete key, i have no clue why.
   const selectionState = editorState.getSelection();
   const updatedSelection = selectionState.merge({
     anchorOffset: start,
@@ -29,6 +30,7 @@ export const replaceMatchedTextByEntity = (
     entityKey
   );
   // I added an extra space, because I found it more confortable.
+  // @todo Should probably be another global state of input, as if someone's input a "." ro a "," just after a tab, we should probably autoremove the inserted whitespace.
   contentState = Modifier.insertText(
     contentState,
     contentState.getSelectionAfter(),

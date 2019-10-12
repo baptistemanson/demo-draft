@@ -8,13 +8,12 @@
 - [x] add space after autocomplete
 - [x] reskin suggestions box - 15 min
 - [x] color the autocomplete in the decorator - 5 min
-- [ ] cleanup - 20 min
-- [ ] introduce a better distance function for autocomplete entries - 30 min
-- [ ] correct bugs - 1h
 
+- [x] correct bugs - 1h timeboxed
 - [x] Check bug if match autocomplete with arrows, then change entry...
 - [x] Check bug with entries with spaces
 - [x] check bugs mouse selection
 - [x] Bug on the length of the selection
-
 - [ ] undo redo length of expression bug.
+
+- [ ] redux would be way more confortable to manage state, and would save us the headache with the undo.
