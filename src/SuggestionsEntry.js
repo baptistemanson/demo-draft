@@ -4,7 +4,7 @@ export default props => (
     style={{
       border: 1,
       borderColor: "black",
-      backgroundColor: props.selected ? "green" : "yellow"
+      backgroundColor: props.selected ? "lightyellow" : "white"
     }}
     onClick={props.onClick}
   >

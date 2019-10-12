@@ -1,5 +1,7 @@
 import React from "react";
 
+import escapeString from "escape-string-regexp";
+
 export default React.createContext({
   selected: "",
   suggestions: [],
@@ -21,8 +23,7 @@ const hashtag = [
   "<>hello",
   "<>world"
 ];
-
 export const getMatchingEntries = selected => {
-  const matchingRegexp = new RegExp(`.*${selected}.*`);
+  const matchingRegexp = new RegExp(`.*${escapeString(selected)}.*`);
   return hashtag.filter(s => s.match(matchingRegexp));
 };

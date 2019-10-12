@@ -6,11 +6,13 @@
 - [x] click should not select but resolve the autocomplete - 1h
 - [x] autocomplete of 3 types, not only one. - 30 min
 - [x] add space after autocomplete
-- [ ] reskin suggestions box - 15 min
-- [ ] color the autocomplete in the decorator - 5 min
+- [x] reskin suggestions box - 15 min
+- [x] color the autocomplete in the decorator - 5 min
 - [ ] cleanup - 20 min
 - [ ] introduce a better distance function for autocomplete entries - 30 min
 - [ ] correct bugs - 1h
 
 - [ ] Check bug if match autocomplete with arrows, then change entry...
 - [x] Check bug with entries with spaces
+- [x] check bugs mouse selection
+- [x] Bug on the length of the selection

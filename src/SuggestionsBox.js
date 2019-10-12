@@ -11,7 +11,7 @@ class SuggestionsPortal extends React.Component {
     return ReactDOM.createPortal(
       <div
         style={{
-          backgroundColor: "yellow",
+          backgroundColor: "rgb(255,255,224)",
           zIndex: 1,
           position: "fixed",
           top: this.props.position.bottom + 15,
@@ -23,7 +23,10 @@ class SuggestionsPortal extends React.Component {
             <SuggestionsEntry
               key={entry}
               entry={entry}
-              onClick={() => this.context.onSelectSuggestion(entry)}
+              onClick={event => {
+                this.context.onSelectSuggestion(entry);
+                event.stopPropagation();
+              }}
               selected={this.context.selected === entry}
             />
           ))}
@@ -57,7 +60,7 @@ export default class SuggestionsBox extends React.Component {
   render() {
     return (
       <>
-        <span style={{ backgroundColor: "yellow" }} ref={this.ref}>
+        <span style={{ backgroundColor: "rgb(255,255,224)" }} ref={this.ref}>
           {this.props.children}
         </span>
         <SuggestionsPortal {...this.props} position={this.state.position} />
