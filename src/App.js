@@ -156,14 +156,15 @@ class IdeaflowEditor extends React.Component {
     }
   }
 
-  validate() {
+  validate(forceCursorPosition = false) {
     const selected = this.state.selected || this.state.textToMatch;
     const editorState = replaceMatchedTextByEntity(
       this.state.editorState,
       this.state.textToMatchPosition.contentBlock,
       this.state.textToMatchPosition.start,
       this.state.textToMatchPosition.end,
-      selected
+      selected,
+      forceCursorPosition
     );
     this.setState({
       isCurrentlyAutocompleting: false,
@@ -188,7 +189,7 @@ class IdeaflowEditor extends React.Component {
             selected: this.state.selected,
             suggestions: getMatchingEntries(this.state.textToMatch),
             onSelectSuggestion: selected => {
-              this.setState({ selected }, this.validate.bind(this));
+              this.setState({ selected }, () => this.validate(true));
             },
             setTextToMatch: textToMatch => this.setState({ textToMatch }),
             isCurrentlyAutocompleting: isCurrentlyAutocompleting => {

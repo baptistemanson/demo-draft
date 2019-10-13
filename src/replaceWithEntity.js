@@ -7,7 +7,8 @@ export const replaceMatchedTextByEntity = (
   block,
   start,
   end,
-  text
+  text,
+  forceSelection = false
 ) => {
   // I couldn't assume the current selection was the one we were trying to replace.
   // selection is off by one in size when using the delete key, i have no clue why.
@@ -37,5 +38,23 @@ export const replaceMatchedTextByEntity = (
     " "
   );
 
-  return EditorState.push(editorState, contentState, "replace-entity");
+  editorState = EditorState.push(editorState, contentState, "replace-entity");
+
+  // restore cursor position before edits if the edits were the result of a click elsewhere.
+  if (selectionState.focusOffset !== end && !forceSelection) {
+    editorState = EditorState.forceSelection(editorState, selectionState);
+  }
+  // if the insertion comes from an interaction w the focus outside of the edit, like via clicking on a tooltip
+  if (forceSelection) {
+    const afterAutocompleteSelection = updatedSelection.merge({
+      anchorOffset: updatedSelection.getAnchorOffset() + text.length + 1,
+      focusOffset: updatedSelection.getAnchorOffset() + text.length + 1
+    });
+    editorState = EditorState.forceSelection(
+      editorState,
+      afterAutocompleteSelection
+    );
+  }
+
+  return editorState;
 };
