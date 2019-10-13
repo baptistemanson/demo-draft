@@ -7,9 +7,10 @@ export const replaceMatchedTextByEntity = (
   block,
   start,
   end,
-  text,
+  rawText,
   forceSelection = false
 ) => {
+  const text = rawText.trim();
   // I couldn't assume the current selection was the one we were trying to replace.
   // selection is off by one in size when using the delete key, i have no clue why.
   const selectionState = editorState.getSelection();
