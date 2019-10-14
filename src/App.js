@@ -1,14 +1,14 @@
 import React from "react";
 
-import SpanHashtag from "./Components/SpanHashtag";
-import SpanPerson from "./Components/SpanPerson";
-import SpanRelation from "./Components/SpanRelation";
+import SpanHashtag from "./Content/SpanHashtag";
+import SpanPerson from "./Content/SpanPerson";
+import SpanRelation from "./Content/SpanRelation";
 
-import SuggestionsBox from "./Components/SuggestionsBox";
+import SuggestionsBox from "./Suggestions/SuggestionsBox";
 import defaultContent from "./defaultContent";
-import suggestionContext from "./suggestionContext";
-import { getMatchingEntries } from "./textMatching";
-import { replaceMatchedTextByEntity } from "./replaceWithEntity";
+import suggestionContext from "./Suggestions/suggestionContext";
+import { getMatchingEntries } from "./Suggestions/textMatching";
+import { replaceMatchedTextByEntity } from "./draftHelpers";
 
 import {
   EditorState,
@@ -74,7 +74,7 @@ class IdeaflowEditor extends React.Component {
     let matchArr;
     while ((matchArr = regexp.exec(text)) !== null) {
       const start = matchArr.index;
-      // if there is already an entity at this position, we dont put the suggestion box
+
       const prefixLength = matchArr[0][0] === "<" ? 3 : 2;
       const end = start + prefixLength + this.state.counterLetter;
       // when there is already an entity at this location, we don't need automcomplete.
@@ -134,13 +134,17 @@ class IdeaflowEditor extends React.Component {
   handleKeyCommand(command) {
     switch (command) {
       case "move-up": {
-        const suggestions = getMatchingEntries(this.state.textToMatch);
+        const suggestions = getMatchingEntries(this.state.textToMatch).map(
+          e => e.text
+        );
         const index = suggestions.indexOf(this.state.selected);
         if (index > 0) this.setState({ selected: suggestions[index - 1] });
         return "handled";
       }
       case "move-down": {
-        const suggestions = getMatchingEntries(this.state.textToMatch);
+        const suggestions = getMatchingEntries(this.state.textToMatch).map(
+          e => e.text
+        );
         const index = suggestions.indexOf(this.state.selected);
         if (index === -1) this.setState({ selected: suggestions[0] });
         if (index < suggestions.length - 1) {
@@ -210,7 +214,7 @@ class IdeaflowEditor extends React.Component {
             <Editor
               editorState={this.state.editorState}
               onChange={this.onChange}
-              placeholder="Write a tweet..."
+              placeholder="Write some text..."
               ref="editor"
               handleKeyCommand={this.handleKeyCommand.bind(this)}
               keyBindingFn={this.keyBindingFn.bind(this)}
@@ -256,18 +260,15 @@ const findByEntityType = type => {
 const styles = {
   root: {
     fontFamily: "'Open Sans', sans-serif",
-    width: 600
+    width: "90%"
   },
   editor: {
     border: "1px solid #ddd",
     cursor: "text",
     fontSize: 16,
     minHeight: 40,
+    width: "100%",
     padding: 10
-  },
-  button: {
-    marginTop: 10,
-    textAlign: "center"
   }
 };
 

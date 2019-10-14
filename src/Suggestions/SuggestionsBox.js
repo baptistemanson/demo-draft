@@ -2,12 +2,13 @@ import React from "react";
 import ReactDOM from "react-dom";
 import SuggestionsEntry from "./SuggestionsEntry";
 
-import suggestionContext from "../suggestionContext";
+import suggestionContext from "./suggestionContext";
 
 class SuggestionsPortal extends React.Component {
   static contextType = suggestionContext;
 
   render() {
+    // @todo if border of the screen, the autocomplete should be positioned elsewhere
     return ReactDOM.createPortal(
       <div
         style={{
@@ -22,13 +23,13 @@ class SuggestionsPortal extends React.Component {
         <div>
           {this.context.suggestions.map(entry => (
             <SuggestionsEntry
-              key={entry}
+              key={entry.text}
               entry={entry}
               onClick={event => {
-                this.context.onSelectSuggestion(entry);
+                this.context.onSelectSuggestion(entry.text);
                 event.stopPropagation();
               }}
-              selected={this.context.selected === entry}
+              selected={this.context.selected === entry.text}
             />
           ))}
         </div>

@@ -6,7 +6,8 @@ export default props => {
       style={{
         color: "rgba(98, 177, 254, 1.0)",
         direction: "ltr",
-        unicodeBidi: "bidi-override"
+        unicodeBidi: "bidi-override",
+        textTransform: "capitalize"
       }}
       data-offset-key={props.offsetKey}
     >

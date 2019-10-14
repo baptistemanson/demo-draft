@@ -14,7 +14,7 @@
 - [x] Check bug with entries with spaces
 - [x] check bugs mouse selection
 - [x] Bug on the length of the selection
-- [ ] undo redo length of expression bug.
+- [x] undo redo length of expression bug.
 - [x] the cursor position was lost when clicking elsewhere
 
 - [ ] redux would be way more confortable to manage state, and would save us the headache with the undo.

@@ -2,22 +2,20 @@ export default {
   blocks: [
     {
       text:
-        'This is an "immutable" entity: @Superman. Deleting any ' +
+        'This is an "immutable" entity: @Baptiste Manson. Deleting any ' +
         "characters will delete the entire entity. Adding characters " +
         "will remove the entity from the range.",
       type: "unstyled",
-      entityRanges: [{ offset: 31, length: 9, key: "first" }]
+      entityRanges: [{ offset: 31, length: 16, key: "first" }]
     },
     {
       text: "",
       type: "unstyled"
     },
     {
-      text:
-        'This is a "mutable" entity: #Batman. Characters may be added ' +
-        "and removed.",
+      text: "What about: #adastra. Characters may be added and removed.",
       type: "unstyled",
-      entityRanges: [{ offset: 28, length: 7, key: "second" }]
+      entityRanges: [{ offset: 12, length: 8, key: "second" }]
     },
     {
       text: "012345 yoyo Bat",
@@ -25,11 +23,11 @@ export default {
     },
     {
       text:
-        'This is a "segmented" entity: <>Green Lantern. Deleting any ' +
+        "Relations! <>hello. Deleting any " +
         'characters will delete the current "segment" from the range. ' +
         "Adding characters will remove the entire entity from the range.",
       type: "unstyled",
-      entityRanges: [{ offset: 30, length: 15, key: "third" }]
+      entityRanges: [{ offset: 11, length: 7, key: "third" }]
     }
   ],
   entityMap: {
@@ -43,8 +41,7 @@ export default {
     },
     third: {
       type: "relation",
-      mutability: "IMMUTABLE",
-      data: { balabl: "johi" }
+      mutability: "IMMUTABLE"
     }
   }
 };
