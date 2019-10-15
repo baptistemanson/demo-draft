@@ -21,6 +21,7 @@ import {
 class IdeaflowEditor extends React.Component {
   constructor() {
     super();
+    this.refSuggestions = React.createRef();
     const blocks = convertFromRaw(defaultContent);
     const decorator = new CompositeDecorator([
       {
@@ -177,6 +178,7 @@ class IdeaflowEditor extends React.Component {
       <div style={styles.root}>
         <suggestionContext.Provider
           value={{
+            refSuggestions: this.refSuggestions.current,
             selected: this.state.selected,
             suggestions: getMatchingEntries(this.state.textToMatch),
             onSelectSuggestion: selected => {
@@ -204,7 +206,7 @@ class IdeaflowEditor extends React.Component {
               handleKeyCommand={this.handleKeyCommand}
               keyBindingFn={this.keyBindingFn}
             />
-            <div id="suggestions" />
+            <div ref={this.refSuggestions} />
           </div>
         </suggestionContext.Provider>
       </div>

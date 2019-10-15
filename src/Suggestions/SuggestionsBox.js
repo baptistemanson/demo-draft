@@ -8,6 +8,9 @@ class SuggestionsPortal extends React.Component {
   static contextType = suggestionContext;
 
   render() {
+    // if we didnt acquire the reference yet.
+    if (!this.context.refSuggestions) return null;
+
     // @todo if border of the screen, the autocomplete should be positioned elsewhere
     return ReactDOM.createPortal(
       <div
@@ -34,7 +37,7 @@ class SuggestionsPortal extends React.Component {
           ))}
         </div>
       </div>,
-      document.getElementById("suggestions")
+      this.context.refSuggestions
     );
   }
 }
