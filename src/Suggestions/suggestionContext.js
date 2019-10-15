@@ -8,6 +8,6 @@ export default React.createContext({
   refSuggestions: null,
   moveUp: () => {},
   moveDown: () => {},
-  onSelectSuggestion: () => {},
+  replaceTextByEntity: () => {},
   isCurrentlyAutocompleting: () => {}
 });

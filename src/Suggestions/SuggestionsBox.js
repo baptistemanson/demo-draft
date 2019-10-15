@@ -29,7 +29,7 @@ class SuggestionsPortal extends React.Component {
               key={entry.text}
               entry={entry}
               onClick={event => {
-                this.context.onSelectSuggestion(entry.text);
+                this.context.replaceTextByEntity(entry.text, true);
                 event.stopPropagation();
               }}
               selected={this.context.selected === entry.text}
@@ -56,6 +56,16 @@ export default class SuggestionsBox extends React.Component {
       position: this.ref.current.getBoundingClientRect()
     });
     this.context.isCurrentlyAutocompleting(true);
+  }
+
+  componentDidUpdate() {
+    // if not carrying the selection anymore, we validate. It will ultimately lead to unmounting this component
+    if (this.props.children[0].props.selection === null) {
+      this.context.replaceTextByEntity(
+        this.props.children[0].props.text,
+        false
+      );
+    }
   }
 
   componentWillUnmount() {

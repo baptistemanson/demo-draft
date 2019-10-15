@@ -74,9 +74,7 @@ class IdeaflowEditor extends React.Component {
     let matchArr;
     while ((matchArr = regexp.exec(text)) !== null) {
       const start = matchArr.index;
-
       const selectionState = this.state.editorState.getSelection();
-
       const end = selectionState.getEndOffset() + 1;
       // when there is already an entity at this location, we don't need automcomplete.
       const key = contentBlock.getEntityAt(start);
@@ -104,6 +102,9 @@ class IdeaflowEditor extends React.Component {
       return "move-down";
     }
     if (e.keyCode === 13 && this.state.isCurrentlyAutocompleting) {
+      return "validate";
+    }
+    if (e.keyCode === 9 && this.state.isCurrentlyAutocompleting) {
       return "validate";
     }
     if (e.keyCode === 9 && this.state.isCurrentlyAutocompleting) {
@@ -181,8 +182,8 @@ class IdeaflowEditor extends React.Component {
             refSuggestions: this.refSuggestions.current,
             selected: this.state.selected,
             suggestions: getMatchingEntries(this.state.textToMatch),
-            onSelectSuggestion: selected => {
-              this.setState({ selected }, () => this.validate(true));
+            replaceTextByEntity: (selected, forceSelection = false) => {
+              this.setState({ selected }, () => this.validate(forceSelection));
             },
             isCurrentlyAutocompleting: isCurrentlyAutocompleting => {
               if (
