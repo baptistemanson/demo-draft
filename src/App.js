@@ -211,24 +211,6 @@ class IdeaflowEditor extends React.Component {
     );
   }
 }
-/**
- * Determines if we need to increment the counter after a keypress.
- *
- * /!\ it doesn't work if your keyboard is in International Mode on Mac with combined latin accent. It needs to be smarter.
- *
- * @param {*} keycode
- */
-const isDisplayableChar = keycode => {
-  return (
-    (keycode > 47 && keycode < 58) || // number keys
-    keycode === 32 ||
-    keycode === 13 || // spacebar & return key(s) (if you want to allow carriage returns)
-    (keycode > 64 && keycode < 91) || // letter keys
-    (keycode > 95 && keycode < 112) || // numpad keys
-    (keycode > 185 && keycode < 193) || // ;=,-./` (in order)
-    (keycode > 218 && keycode < 223)
-  ); // [\]' (in order)
-};
 
 const findByEntityType = type => {
   return function(contentBlock, callback, contentState) {
