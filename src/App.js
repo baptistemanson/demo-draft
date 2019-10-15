@@ -49,8 +49,7 @@ class IdeaflowEditor extends React.Component {
         EditorState.createWithContent(blocks, decorator),
         { allowUndo: false }
       ),
-      textToMatchPosition: { start: 0, end: 0, contentBlock: null },
-      counterLetter: 0
+      textToMatchPosition: { start: 0, end: 0, contentBlock: null }
     };
     this.focus = () => this.refs.editor.focus();
     this.onChange = editorState => this.setState({ editorState });
@@ -75,8 +74,9 @@ class IdeaflowEditor extends React.Component {
     while ((matchArr = regexp.exec(text)) !== null) {
       const start = matchArr.index;
 
-      const prefixLength = matchArr[0][0] === "<" ? 3 : 2;
-      const end = start + prefixLength + this.state.counterLetter;
+      const selectionState = this.state.editorState.getSelection();
+
+      const end = selectionState.getEndOffset() + 1;
       // when there is already an entity at this location, we don't need automcomplete.
       const key = contentBlock.getEntityAt(start);
       if (!key) {
@@ -96,18 +96,6 @@ class IdeaflowEditor extends React.Component {
   }
 
   keyBindingFn = e => {
-    // we keep track of the number of characters in the autocomplete.
-    // we don't use the caret position because the selection object is buggy with backspace.
-    if (this.state.isCurrentlyAutocompleting && isDisplayableChar(e.keyCode)) {
-      this.setState({ counterLetter: this.state.counterLetter + 1 });
-    }
-    if (
-      this.state.isCurrentlyAutocompleting &&
-      (e.keyCode === 8 || e.keyCode === 46)
-    ) {
-      this.setState({ counterLetter: this.state.counterLetter - 1 });
-    }
-
     if (e.keyCode === 38 && this.state.isCurrentlyAutocompleting) {
       return "move-up";
     }
@@ -173,8 +161,7 @@ class IdeaflowEditor extends React.Component {
     this.setState({
       isCurrentlyAutocompleting: false,
       editorState,
-      selected: "",
-      counterLetter: 0
+      selected: ""
     });
   }
 
@@ -202,8 +189,7 @@ class IdeaflowEditor extends React.Component {
               ) {
                 this.setState({
                   isCurrentlyAutocompleting,
-                  selected: "",
-                  counterLetter: 0
+                  selected: ""
                 });
               }
             }
