@@ -95,7 +95,7 @@ class IdeaflowEditor extends React.Component {
     }
   }
 
-  keyBindingFn(e) {
+  keyBindingFn = e => {
     // we keep track of the number of characters in the autocomplete.
     // we don't use the caret position because the selection object is buggy with backspace.
     if (this.state.isCurrentlyAutocompleting && isDisplayableChar(e.keyCode)) {
@@ -129,9 +129,9 @@ class IdeaflowEditor extends React.Component {
       return "validate";
     }
     return getDefaultKeyBinding(e);
-  }
+  };
 
-  handleKeyCommand(command) {
+  handleKeyCommand = command => {
     switch (command) {
       case "move-up": {
         const suggestions = getMatchingEntries(this.state.textToMatch).map(
@@ -158,7 +158,7 @@ class IdeaflowEditor extends React.Component {
       default:
         return "not-handled";
     }
-  }
+  };
 
   validate(forceCursorPosition = false) {
     const selected = this.state.selected || this.state.textToMatch;
@@ -178,12 +178,12 @@ class IdeaflowEditor extends React.Component {
     });
   }
 
-  onClick() {
+  onClick = () => {
     this.focus();
     if (this.state.isCurrentlyAutocompleting) {
       this.validate();
     }
-  }
+  };
 
   render() {
     return (
@@ -195,7 +195,6 @@ class IdeaflowEditor extends React.Component {
             onSelectSuggestion: selected => {
               this.setState({ selected }, () => this.validate(true));
             },
-            setTextToMatch: textToMatch => this.setState({ textToMatch }),
             isCurrentlyAutocompleting: isCurrentlyAutocompleting => {
               if (
                 this.state.isCurrentlyAutocompleting !==
@@ -210,14 +209,14 @@ class IdeaflowEditor extends React.Component {
             }
           }}
         >
-          <div style={styles.editor} onClick={this.onClick.bind(this)}>
+          <div style={styles.editor} onClick={this.onClick}>
             <Editor
               editorState={this.state.editorState}
               onChange={this.onChange}
               placeholder="Write some text..."
               ref="editor"
-              handleKeyCommand={this.handleKeyCommand.bind(this)}
-              keyBindingFn={this.keyBindingFn.bind(this)}
+              handleKeyCommand={this.handleKeyCommand}
+              keyBindingFn={this.keyBindingFn}
             />
             <div id="suggestions" />
           </div>

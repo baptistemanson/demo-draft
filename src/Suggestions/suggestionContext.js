@@ -5,7 +5,6 @@ import React from "react";
 export default React.createContext({
   selected: "",
   suggestions: [],
-  setTextToMatch: () => {},
   moveUp: () => {},
   moveDown: () => {},
   onSelectSuggestion: () => {},
