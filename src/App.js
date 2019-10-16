@@ -17,7 +17,7 @@ import {
   findEntityByType,
   autocomplete,
   isEditingASuggestion,
-  isEditingASuggestionPre,
+  getSuggestionTypePre,
   expandSuggestion,
   startSuggestions,
   startSuggestionsRelation,
@@ -80,7 +80,7 @@ class IdeaflowEditor extends React.Component {
   };
 
   bindKeys = e => {
-    const isInEdit = isEditingASuggestionPre(this.state.editorState);
+    const suggestionType = getSuggestionTypePre(this.state.editorState);
     if (e.key === "@") {
       return "start-suggestions-@";
     }
@@ -90,19 +90,21 @@ class IdeaflowEditor extends React.Component {
     if (e.key === ">" && previousChar(this.state.editorState) === "<") {
       return "start-suggestions->";
     }
-    if (e.keyCode === 38 && isInEdit) {
+    if (e.keyCode === 38 && suggestionType) {
       return "local-move-up";
     }
-    if (e.keyCode === 40 && isInEdit) {
+    if (e.keyCode === 40 && suggestionType) {
       return "local-move-down";
     }
-    if (e.keyCode === 13 && isInEdit) {
+    if (e.keyCode === 13 && suggestionType) {
       return "local-autocomplete";
     }
-    if (e.keyCode === 9 && isInEdit) {
+    if (e.keyCode === 9 && suggestionType) {
       return "local-autocomplete";
     }
-    // @todo add the space for #
+    if (e.keyCode === 32 && suggestionType === "suggestions-#") {
+      return "local-autocomplete";
+    }
     return getDefaultKeyBinding(e);
   };
 

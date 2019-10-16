@@ -15,7 +15,7 @@ export const startSuggestions = (editorState, letter) => {
   const selection = editorState.getSelection();
 
   let contentState = editorState.getCurrentContent();
-  contentState = contentState.createEntity("suggestions", "MUTABLE");
+  contentState = contentState.createEntity(`suggestions-${letter}`, "MUTABLE");
   const entityKey = contentState.getLastCreatedEntityKey();
 
   contentState = Modifier.insertText(
@@ -34,9 +34,8 @@ export const startSuggestionsRelation = editorState => {
     anchorOffset: selection.getAnchorOffset() - 1,
     focusOffset: selection.getFocusOffset()
   });
-  console.log(selection.serialize());
   let contentState = editorState.getCurrentContent();
-  contentState = contentState.createEntity("suggestions", "MUTABLE");
+  contentState = contentState.createEntity("suggestions->", "MUTABLE");
   const entityKey = contentState.getLastCreatedEntityKey();
 
   contentState = Modifier.replaceText(
@@ -57,7 +56,11 @@ export const findEntityByType = type => (
   contentBlock.findEntityRanges(character => {
     const entityKey = character.getEntity();
     return (
-      entityKey !== null && contentState.getEntity(entityKey).getType() === type
+      entityKey !== null &&
+      contentState
+        .getEntity(entityKey)
+        .getType()
+        .startsWith(type)
     );
   }, callback);
 };
@@ -77,15 +80,18 @@ export const isEditingASuggestion = editorState => {
   }
   return (
     entityKey !== null &&
-    contentState.getEntity(entityKey).getType() === "suggestions"
+    contentState
+      .getEntity(entityKey)
+      .getType()
+      .startsWith("suggestions")
   );
 };
 
 /**
- * Determine if we are currently editing a suggestion BEFORE the current edit is applied
+ * Determines if we are currently editing a suggestion BEFORE the current edit is applied
  * @param {*} editorState
  */
-export const isEditingASuggestionPre = editorState => {
+export const getSuggestionTypePre = editorState => {
   let contentState = editorState.getCurrentContent();
   const selection = editorState.getSelection();
   // if previous char is a suggestion entity, we are editing a suggestion :)
@@ -94,10 +100,15 @@ export const isEditingASuggestionPre = editorState => {
   if (selection.getFocusOffset() - 1 < 0) {
     entityKey = block.getEntityAt(0);
   }
-  return (
+  if (
     entityKey !== null &&
-    contentState.getEntity(entityKey).getType() === "suggestions"
-  );
+    contentState
+      .getEntity(entityKey)
+      .getType()
+      .startsWith("suggestions")
+  ) {
+    return contentState.getEntity(entityKey).getType();
+  } else return false;
 };
 
 /**

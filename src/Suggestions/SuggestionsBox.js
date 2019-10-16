@@ -31,6 +31,9 @@ class SuggestionsPortal extends React.Component {
     if (command === "local-move-up") {
       if (this.state.selectedIndex > 0)
         this.setState({ selectedIndex: this.state.selectedIndex - 1 });
+      else {
+        this.setState({ selectedIndex: null });
+      }
       return "handled";
     }
     if (command === "local-move-down") {
@@ -38,6 +41,8 @@ class SuggestionsPortal extends React.Component {
         this.setState({ selectedIndex: 0 });
       } else if (this.state.selectedIndex < matchingEntries.length - 1) {
         this.setState({ selectedIndex: this.state.selectedIndex + 1 });
+      } else {
+        this.setState({ selectedIndex: null }); // warp around
       }
       return "handled";
     }
