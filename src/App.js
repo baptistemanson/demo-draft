@@ -1,231 +1,157 @@
 import React from "react";
 
+import {
+  Editor,
+  EditorState,
+  CompositeDecorator,
+  getDefaultKeyBinding
+} from "draft-js";
+import suggestionsContext from "./Suggestions/suggestionsContext";
+
 import SpanHashtag from "./Content/SpanHashtag";
 import SpanPerson from "./Content/SpanPerson";
 import SpanRelation from "./Content/SpanRelation";
-
 import SuggestionsBox from "./Suggestions/SuggestionsBox";
-import defaultContent from "./defaultContent";
-import suggestionContext from "./Suggestions/suggestionContext";
-import { getMatchingEntries } from "./Suggestions/textMatching";
-import { replaceMatchedTextByEntity } from "./draftHelpers";
 
 import {
-  EditorState,
-  Editor,
-  CompositeDecorator,
-  convertFromRaw,
-  getDefaultKeyBinding
-} from "draft-js";
+  findEntityByType,
+  autocomplete,
+  isEditingASuggestion,
+  isEditingASuggestionPre,
+  expandSuggestion,
+  startSuggestions
+} from "./DraftUtils";
 
 class IdeaflowEditor extends React.Component {
+  activeBindings = () => {};
+
   constructor() {
     super();
     this.refSuggestions = React.createRef();
-    const blocks = convertFromRaw(defaultContent);
     const decorator = new CompositeDecorator([
       {
-        strategy: findByEntityType("person"),
+        strategy: findEntityByType("suggestions"),
+        component: SuggestionsBox
+      },
+      {
+        strategy: findEntityByType("person"),
         component: SpanPerson
       },
       {
-        strategy: findByEntityType("hashtag"),
+        strategy: findEntityByType("hashtag"),
         component: SpanHashtag
       },
       {
-        strategy: findByEntityType("relation"),
+        strategy: findEntityByType("relation"),
         component: SpanRelation
-      },
-      {
-        strategy: this.findSuggestions.bind(this),
-        component: SuggestionsBox
       }
     ]);
 
     this.state = {
-      isCurrentlyAutocompleting: false,
-      selected: "",
-      textToMatch: "",
-      editorState: EditorState.set(
-        EditorState.createWithContent(blocks, decorator),
-        { allowUndo: false }
-      ),
-      textToMatchPosition: { start: 0, end: 0, contentBlock: null }
+      editorState: EditorState.set(EditorState.createEmpty(decorator), {
+        allowUndo: false
+      })
     };
     this.focus = () => this.refs.editor.focus();
-    this.onChange = editorState => this.setState({ editorState });
-  }
-  /**
-   * Is in charge of detecting where the autocomplete process might occur.
-   *
-   * @param {*} contentBlock
-   * @param {*} callback
-   * @param {*} contentState
-   */
-  findSuggestions(contentBlock, callback, contentState) {
-    // if we are initializing the system, we don't try to autocomplete.
-    if (!this.state) return;
-    /**
-     * a string that starts by @, # then a char that is not followed by a whitespace and does not contain #.. OR
-     * a string that starts by <> and not followed by a whitespace.
-     */
-    const regexp = /([@#][^@#<\s][^@#<]*|<>[^@#<\s][^@#<]*)/g;
-    const text = contentBlock.getText();
-    let matchArr;
-    while ((matchArr = regexp.exec(text)) !== null) {
-      const start = matchArr.index;
-      const selectionState = this.state.editorState.getSelection();
-      const end = selectionState.getEndOffset() + 1;
-      // when there is already an entity at this location, we don't need automcomplete.
-      const key = contentBlock.getEntityAt(start);
-      if (!key) {
-        this.setState({
-          textToMatch: matchArr[0].substr(0, end - start),
-          textToMatchPosition: {
-            start,
-            contentBlock,
-            end
-          }
-        });
-        // only one autocomplete at a time, we would have to complexify to have more.
-        callback(start, end);
-        break;
-      }
-    }
-  }
 
-  keyBindingFn = e => {
-    if (e.keyCode === 38 && this.state.isCurrentlyAutocompleting) {
-      return "move-up";
+    this.onChange = editorState => {
+      if (!editorState) return;
+      // console.log(convertToRaw(editorState.getCurrentContent()));
+
+      if (isEditingASuggestion(editorState)) {
+        console.log("editing a suggestion");
+        editorState = expandSuggestion(editorState);
+      }
+      this.setState({
+        editorState
+      });
+    };
+  }
+  replaceByEntity = (text, blockKey, start, end) => {
+    this.setState({
+      editorState: autocomplete(
+        this.state.editorState,
+        text,
+        blockKey,
+        start,
+        end
+      )
+    });
+  };
+
+  bindKeys = e => {
+    const isInEdit = isEditingASuggestionPre(this.state.editorState);
+    // console.log(this.state.editorState.getSelection().serialize());
+    if (e.key === "@") {
+      return "start-suggestions-@";
     }
-    if (e.keyCode === 40 && this.state.isCurrentlyAutocompleting) {
-      return "move-down";
+    if (e.key === "#") {
+      return "start-suggestions-#";
     }
-    if (e.keyCode === 13 && this.state.isCurrentlyAutocompleting) {
-      return "validate";
+    if (e.keyCode === 38 && isInEdit) {
+      return "local-move-up";
     }
-    if (e.keyCode === 9 && this.state.isCurrentlyAutocompleting) {
-      return "validate";
+    if (e.keyCode === 40 && isInEdit) {
+      return "local-move-down";
     }
-    if (e.keyCode === 9 && this.state.isCurrentlyAutocompleting) {
-      return "validate";
+    if (e.keyCode === 13 && isInEdit) {
+      return "local-autocomplete";
     }
-    // whitespace validates hashtag
-    if (
-      e.keyCode === 32 &&
-      this.state.isCurrentlyAutocompleting &&
-      this.state.textToMatch.startsWith("#")
-    ) {
-      return "validate";
+    if (e.keyCode === 9 && isInEdit) {
+      return "local-autocomplete";
     }
+    // @todo add the space for #
     return getDefaultKeyBinding(e);
   };
 
   handleKeyCommand = command => {
-    switch (command) {
-      case "move-up": {
-        const suggestions = getMatchingEntries(this.state.textToMatch).map(
-          e => e.text
-        );
-        const index = suggestions.indexOf(this.state.selected);
-        if (index > 0) this.setState({ selected: suggestions[index - 1] });
-        return "handled";
-      }
-      case "move-down": {
-        const suggestions = getMatchingEntries(this.state.textToMatch).map(
-          e => e.text
-        );
-        const index = suggestions.indexOf(this.state.selected);
-        if (index === -1) this.setState({ selected: suggestions[0] });
-        if (index < suggestions.length - 1) {
-          this.setState({ selected: suggestions[index + 1] });
-        }
-        return "handled";
-      }
-      case "validate":
-        this.validate();
-        return "handled";
-      default:
-        return "not-handled";
+    if (command.startsWith("local")) {
+      this.activeBindings(command);
+      return "handled";
     }
-  };
-
-  validate(forceCursorPosition = false) {
-    const selected = this.state.selected || this.state.textToMatch;
-    const editorState = replaceMatchedTextByEntity(
-      this.state.editorState,
-      this.state.textToMatchPosition.contentBlock,
-      this.state.textToMatchPosition.start,
-      this.state.textToMatchPosition.end,
-      selected,
-      forceCursorPosition
-    );
-    this.setState({
-      isCurrentlyAutocompleting: false,
-      editorState,
-      selected: ""
-    });
-  }
-
-  onClick = () => {
-    this.focus();
-    if (this.state.isCurrentlyAutocompleting) {
-      this.validate();
+    if (command === "start-suggestions-@") {
+      // add @ to the editorState at the caret position
+      this.onChange(startSuggestions(this.state.editorState, "@"));
+      return "handled";
     }
+    if (command === "start-suggestions-#") {
+      // add @ to the editorState at the caret position
+      this.onChange(startSuggestions(this.state.editorState, "#"));
+      return "handled";
+    }
+    return "not-handled";
   };
 
   render() {
     return (
-      <div style={styles.root}>
-        <suggestionContext.Provider
-          value={{
-            refSuggestions: this.refSuggestions.current,
-            selected: this.state.selected,
-            suggestions: getMatchingEntries(this.state.textToMatch),
-            replaceTextByEntity: (selected, forceSelection = false) => {
-              this.setState({ selected }, () => this.validate(forceSelection));
-            },
-            isCurrentlyAutocompleting: isCurrentlyAutocompleting => {
-              if (
-                this.state.isCurrentlyAutocompleting !==
-                isCurrentlyAutocompleting
-              ) {
-                this.setState({
-                  isCurrentlyAutocompleting,
-                  selected: ""
-                });
-              }
-            }
-          }}
-        >
-          <div style={styles.editor} onClick={this.onClick}>
+      <suggestionsContext.Provider
+        value={{
+          refSuggestions: this.refSuggestions.current,
+          replaceSuggestionsByEntity: (text, blockKey, start, end) => {
+            this.replaceByEntity(text, blockKey, start, end);
+          },
+          registerActiveBindings: f => {
+            this.activeBindings = f;
+          }
+        }}
+      >
+        <div style={styles.root}>
+          <div style={styles.editor}>
             <Editor
               editorState={this.state.editorState}
               onChange={this.onChange}
+              keyBindingFn={this.bindKeys}
+              handleKeyCommand={this.handleKeyCommand}
               placeholder="Write some text..."
               ref="editor"
-              handleKeyCommand={this.handleKeyCommand}
-              keyBindingFn={this.keyBindingFn}
             />
-            <div ref={this.refSuggestions} />
           </div>
-        </suggestionContext.Provider>
-      </div>
+          <div ref={this.refSuggestions} />
+        </div>
+      </suggestionsContext.Provider>
     );
   }
 }
-
-const findByEntityType = type => {
-  return function(contentBlock, callback, contentState) {
-    contentBlock.findEntityRanges(character => {
-      const entityKey = character.getEntity();
-      if (entityKey === null) {
-        return false;
-      }
-      return contentState.getEntity(entityKey).getType() === type;
-    }, callback);
-  };
-};
 
 const styles = {
   root: {
@@ -239,6 +165,9 @@ const styles = {
     minHeight: 40,
     width: "100%",
     padding: 10
+  },
+  handle: {
+    color: "red"
   }
 };
 

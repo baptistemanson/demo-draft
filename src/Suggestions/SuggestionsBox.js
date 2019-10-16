@@ -2,10 +2,60 @@ import React from "react";
 import ReactDOM from "react-dom";
 import SuggestionsEntry from "./SuggestionsEntry";
 
-import suggestionContext from "./suggestionContext";
+import suggestionsContext from "./suggestionsContext";
+
+import { getMatchingEntries } from "./textMatching";
 
 class SuggestionsPortal extends React.Component {
-  static contextType = suggestionContext;
+  static contextType = suggestionsContext;
+  state = { selectedIndex: null };
+
+  componentDidMount() {
+    this.context.registerActiveBindings(this.myKeys);
+  }
+
+  componentWillUnmount() {
+    this.context.registerActiveBindings(() => {});
+  }
+
+  static getDerivedStateFromProps(props, state) {
+    // reset if the selected index in the dropdown is off limits
+    const matchingEntries = getMatchingEntries(props.decoratedText);
+    if (state.selectedIndex >= matchingEntries.length)
+      return { selectedIndex: 0 };
+    else return state;
+  }
+
+  myKeys = command => {
+    const matchingEntries = getMatchingEntries(this.props.decoratedText);
+    if (command === "local-move-up") {
+      if (this.state.selectedIndex > 0)
+        this.setState({ selectedIndex: this.state.selectedIndex - 1 });
+      return "handled";
+    }
+    if (command === "local-move-down") {
+      if (this.state.selectedIndex === null) {
+        this.setState({ selectedIndex: 0 });
+      } else if (this.state.selectedIndex < matchingEntries.length - 1) {
+        this.setState({ selectedIndex: this.state.selectedIndex + 1 });
+      }
+      return "handled";
+    }
+    if (command === "local-autocomplete") {
+      const text =
+        this.state.selectedIndex !== null &&
+        matchingEntries[this.state.selectedIndex]
+          ? matchingEntries[this.state.selectedIndex].text
+          : this.props.decoratedText;
+      // we selected an autocomplete value
+      this.context.replaceSuggestionsByEntity(
+        text,
+        this.props.blockKey,
+        this.props.start,
+        this.props.end
+      );
+    }
+  };
 
   render() {
     // if we didnt acquire the reference yet.
@@ -24,15 +74,20 @@ class SuggestionsPortal extends React.Component {
         }}
       >
         <div>
-          {this.context.suggestions.map(entry => (
+          {getMatchingEntries(this.props.decoratedText).map((entry, index) => (
             <SuggestionsEntry
               key={entry.text}
               entry={entry}
               onClick={event => {
-                this.context.replaceTextByEntity(entry.text, true);
+                this.context.replaceSuggestionsByEntity(
+                  entry.text,
+                  this.props.blockKey,
+                  this.props.start,
+                  this.props.end
+                );
                 event.stopPropagation();
               }}
-              selected={this.context.selected === entry.text}
+              selected={this.state.selectedIndex === index}
             />
           ))}
         </div>
@@ -43,11 +98,14 @@ class SuggestionsPortal extends React.Component {
 }
 
 export default class SuggestionsBox extends React.Component {
-  static contextType = suggestionContext;
+  static contextType = suggestionsContext;
   constructor() {
     super();
     this.ref = React.createRef();
-    this.state = { init: false, position: { bottom: 0, left: 0 } };
+    this.state = {
+      init: false,
+      position: { bottom: 0, left: 0 }
+    };
   }
 
   componentDidMount() {
@@ -55,21 +113,6 @@ export default class SuggestionsBox extends React.Component {
       init: true,
       position: this.ref.current.getBoundingClientRect()
     });
-    this.context.isCurrentlyAutocompleting(true);
-  }
-
-  componentDidUpdate() {
-    // if not carrying the selection anymore, we validate. It will ultimately lead to unmounting this component
-    if (this.props.children[0].props.selection === null) {
-      this.context.replaceTextByEntity(
-        this.props.children[0].props.text,
-        false
-      );
-    }
-  }
-
-  componentWillUnmount() {
-    this.context.isCurrentlyAutocompleting(false);
   }
 
   render() {

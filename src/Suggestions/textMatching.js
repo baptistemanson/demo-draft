@@ -1,5 +1,5 @@
 import escapeString from "escape-string-regexp";
-import distance from "js-levenshtein";
+// import distance from "js-levenshtein";
 
 // http://listofrandomnames.com/index.cfm?textarea
 const names = [
@@ -62,10 +62,5 @@ export const getMatchingEntries = selected => {
   const substringMatchingTerms = matchingTerms
     .filter(s => s.match(matchingRegexp))
     .map(s => ({ text: s, html: s.replace(matchingRegexp, "$1<b>$2</b>$3") }));
-
-  // handle naively typos
-  const levenshteinMatchingTerms = matchingTerms
-    .filter(s => distance(s, selected) <= 2)
-    .map(s => ({ text: s, html: `<i>${s}</i>` }));
-  return [...substringMatchingTerms, ...levenshteinMatchingTerms];
+  return substringMatchingTerms;
 };
