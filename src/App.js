@@ -19,7 +19,9 @@ import {
   isEditingASuggestion,
   isEditingASuggestionPre,
   expandSuggestion,
-  startSuggestions
+  startSuggestions,
+  startSuggestionsRelation,
+  previousChar
 } from "./DraftUtils";
 
 class IdeaflowEditor extends React.Component {
@@ -56,10 +58,8 @@ class IdeaflowEditor extends React.Component {
 
     this.onChange = editorState => {
       if (!editorState) return;
-      // console.log(convertToRaw(editorState.getCurrentContent()));
 
       if (isEditingASuggestion(editorState)) {
-        console.log("editing a suggestion");
         editorState = expandSuggestion(editorState);
       }
       this.setState({
@@ -81,12 +81,14 @@ class IdeaflowEditor extends React.Component {
 
   bindKeys = e => {
     const isInEdit = isEditingASuggestionPre(this.state.editorState);
-    // console.log(this.state.editorState.getSelection().serialize());
     if (e.key === "@") {
       return "start-suggestions-@";
     }
     if (e.key === "#") {
       return "start-suggestions-#";
+    }
+    if (e.key === ">" && previousChar(this.state.editorState) === "<") {
+      return "start-suggestions->";
     }
     if (e.keyCode === 38 && isInEdit) {
       return "local-move-up";
@@ -110,13 +112,15 @@ class IdeaflowEditor extends React.Component {
       return "handled";
     }
     if (command === "start-suggestions-@") {
-      // add @ to the editorState at the caret position
       this.onChange(startSuggestions(this.state.editorState, "@"));
       return "handled";
     }
     if (command === "start-suggestions-#") {
-      // add @ to the editorState at the caret position
       this.onChange(startSuggestions(this.state.editorState, "#"));
+      return "handled";
+    }
+    if (command === "start-suggestions->") {
+      this.onChange(startSuggestionsRelation(this.state.editorState));
       return "handled";
     }
     return "not-handled";

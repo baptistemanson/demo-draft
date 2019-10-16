@@ -2,8 +2,18 @@ import { EditorState, Modifier } from "draft-js";
 
 const entityTypeMap = { "@": "person", "#": "hashtag", "<": "relation" };
 
+export const previousChar = editorState => {
+  const selection = editorState.getSelection();
+  const contentBlock = editorState
+    .getCurrentContent()
+    .getBlockForKey(selection.anchorKey);
+  if (contentBlock && selection.anchorOffset > 0) {
+    return contentBlock.getText()[selection.anchorOffset - 1];
+  } else return "";
+};
 export const startSuggestions = (editorState, letter) => {
   const selection = editorState.getSelection();
+
   let contentState = editorState.getCurrentContent();
   contentState = contentState.createEntity("suggestions", "MUTABLE");
   const entityKey = contentState.getLastCreatedEntityKey();
@@ -12,6 +22,27 @@ export const startSuggestions = (editorState, letter) => {
     contentState,
     selection,
     letter,
+    null,
+    entityKey
+  );
+  return EditorState.push(editorState, contentState, "start-suggestions");
+};
+
+export const startSuggestionsRelation = editorState => {
+  let selection = editorState.getSelection();
+  selection = selection.merge({
+    anchorOffset: selection.getAnchorOffset() - 1,
+    focusOffset: selection.getFocusOffset()
+  });
+  console.log(selection.serialize());
+  let contentState = editorState.getCurrentContent();
+  contentState = contentState.createEntity("suggestions", "MUTABLE");
+  const entityKey = contentState.getLastCreatedEntityKey();
+
+  contentState = Modifier.replaceText(
+    contentState,
+    selection,
+    "<>",
     null,
     entityKey
   );
@@ -88,7 +119,6 @@ const findAnchorForSameEntity = (editorState, selection) => {
 
 export const expandSuggestion = editorState => {
   const selection = editorState.getSelection();
-  console.log(selection.serialize());
   let contentState = editorState.getCurrentContent();
   const [anchorOffset, entityKey] = findAnchorForSameEntity(
     editorState,
